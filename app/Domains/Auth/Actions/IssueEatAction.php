@@ -16,7 +16,8 @@ class IssueEatAction
 
     public function execute(User $user, array $actionPayload): string
     {
-        $actionHash = hash('sha256', json_encode($actionPayload, JSON_SORT_KEYS));
+        ksort($actionPayload);
+        $actionHash = hash('sha256', json_encode($actionPayload));
         return $this->eatService->issueToken($user, $actionHash);
     }
 }

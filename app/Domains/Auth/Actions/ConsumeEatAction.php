@@ -15,7 +15,8 @@ class ConsumeEatAction
 
     public function execute(string $token, array $actionPayload): bool
     {
-        $actionHash = hash('sha256', json_encode($actionPayload, JSON_SORT_KEYS));
+        ksort($actionPayload);
+        $actionHash = hash('sha256', json_encode($actionPayload));
         $payload = $this->eatService->consumeToken($token, $actionHash);
 
         return $payload !== null;

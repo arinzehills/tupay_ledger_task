@@ -29,7 +29,7 @@
                                     },
                                     "password": {
                                         "type": "string",
-                                        "example": "password"
+                                        "example": "password123"
                                     }
                                 },
                                 "type": "object"
@@ -46,6 +46,27 @@
                                     "properties": {
                                         "token": {
                                             "type": "string"
+                                        },
+                                        "user": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "email": {
+                                                    "type": "string"
+                                                },
+                                                "first_name": {
+                                                    "type": "string"
+                                                },
+                                                "last_name": {
+                                                    "type": "string"
+                                                },
+                                                "middle_name": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                }
+                                            },
+                                            "type": "object"
                                         }
                                     },
                                     "type": "object"
