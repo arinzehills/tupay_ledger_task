@@ -2,6 +2,10 @@
 
 A production-grade backend for cross-border financial transactions (NGN ↔ CNY) with double-entry ledger accounting, step-up 2FA, distributed locking, and race-condition-safe concurrency.
 
+## 📹 Demo Video
+
+Watch a walkthrough of the system: [Loom Video](https://www.loom.com/share/3d399d8cc82144aab5d2bc918eeb8e45)
+
 ## Quick Start (Docker)
 
 ```bash
