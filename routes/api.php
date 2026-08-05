@@ -1,6 +1,7 @@
 <?php
 
 use App\Domains\Auth\Controllers\AuthController;
+use App\Domains\Swap\Controllers\SwapController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -22,4 +23,5 @@ Route::middleware('auth:sanctum')->group(function () {
         return $request->user();
     });
     Route::post('/2fa/challenge', [AuthController::class, 'challenge']);
+    Route::post('/swap', [SwapController::class, 'swap']);
 });
