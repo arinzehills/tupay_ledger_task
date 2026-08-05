@@ -68,9 +68,9 @@ class SwapController
                 'destination_amount' => $transaction->destination_amount,
             ], 200);
         } catch (\InvalidArgumentException $e) {
-            return response()->json(['error' => $e->getMessage()], 409);
+            return response()->json(['error' => 'Insufficient balance'], 409);
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
+            return response()->json(['error' => 'Swap failed'], 500);
         }
     }
 }

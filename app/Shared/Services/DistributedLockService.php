@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Cache;
 
 class DistributedLockService
 {
-    private const LOCK_TTL = 30; // seconds
+    private const LOCK_TTL = 60; // seconds - must exceed timeout + operation time
 
     /**
      * @param  array<int, string>  $keys
@@ -17,11 +17,13 @@ class DistributedLockService
         $lockKey = 'lock:'.implode(':', $keys);
 
         $startTime = time();
+        $backoffMs = 1;
         while (time() - $startTime < $timeout) {
             if (Cache::add($lockKey, true, self::LOCK_TTL)) {
                 return true;
             }
-            usleep(100000); // 100ms
+            usleep($backoffMs * 1000); // Exponential backoff
+            $backoffMs = min($backoffMs * 2, 50); // Cap at 50ms
         }
 
         return false;

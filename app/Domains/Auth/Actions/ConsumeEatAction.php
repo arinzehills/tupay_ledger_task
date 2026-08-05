@@ -20,7 +20,13 @@ class ConsumeEatAction
     {
         ksort($actionPayload);
         $payloadJson = json_encode($actionPayload);
-        $actionHash = hash('sha256', is_string($payloadJson) ? $payloadJson : '{}');
+
+        // Fail explicitly if payload encoding fails (prevents security bypass)
+        if ($payloadJson === false) {
+            throw new \RuntimeException('Failed to encode action payload');
+        }
+
+        $actionHash = hash('sha256', $payloadJson);
         $payload = $this->eatService->consumeToken($token, $actionHash);
 
         return $payload !== null;
