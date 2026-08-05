@@ -5,13 +5,14 @@ namespace App\Domains\Auth\DTOs;
 class ChallengeDTO
 {
     public string $totp_code;
+
     /**
      * @var array<string, mixed>
      */
     public array $action_payload;
 
     /**
-     * @param array<string, mixed> $action_payload
+     * @param  array<string, mixed>  $action_payload
      */
     public function __construct(string $totp_code, array $action_payload)
     {
@@ -20,7 +21,7 @@ class ChallengeDTO
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public static function fromRequest(array $data): self
     {

@@ -11,7 +11,7 @@ class ProcessSettlementAction
     {
         $transaction = Transaction::where('id', $transactionId)->first();
 
-        if (!$transaction) {
+        if (! $transaction) {
             throw new \InvalidArgumentException('Transaction not found');
         }
 

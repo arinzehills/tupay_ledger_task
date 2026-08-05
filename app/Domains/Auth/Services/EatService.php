@@ -35,13 +35,13 @@ class EatService
         $redisKey = "eat:{$token}";
         $data = Redis::get($redisKey);
 
-        if (!$data) {
+        if (! $data) {
             return null;
         }
 
         $payload = json_decode($data, true);
 
-        if (!hash_equals($payload['action_hash'], $expectedActionHash)) {
+        if (! hash_equals($payload['action_hash'], $expectedActionHash)) {
             return null;
         }
 

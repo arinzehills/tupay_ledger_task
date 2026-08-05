@@ -21,12 +21,12 @@ class SwapController
     public function swap(Request $request): JsonResponse
     {
         $user = Auth::user();
-        if (!$user instanceof User) {
+        if (! $user instanceof User) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
         $eatToken = $request->header('X-Elevated-Action-Token');
-        if (!is_string($eatToken)) {
+        if (! is_string($eatToken)) {
             return response()->json(['error' => 'Missing EAT token'], 401);
         }
 
@@ -42,7 +42,7 @@ class SwapController
             'amount' => $validated['amount'],
         ];
 
-        if (!$this->consumeEatAction->execute($eatToken, $actionPayload)) {
+        if (! $this->consumeEatAction->execute($eatToken, $actionPayload)) {
             return response()->json(['error' => 'Invalid or expired EAT token'], 422);
         }
 

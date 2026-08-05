@@ -8,7 +8,9 @@ use App\Shared\ValueObjects\Money;
 class CalculateSwapAction
 {
     private const SLIPPAGE_BASE = 0.005; // 0.5%
+
     private const SLIPPAGE_TIER = 0.001; // 0.1% per 500,000 NGN
+
     private const SLIPPAGE_THRESHOLD = 100000000; // 1,000,000 NGN in kobo
 
     private RateService $rateService;
@@ -47,19 +49,20 @@ class CalculateSwapAction
 
         $excess = $sourceAmount - self::SLIPPAGE_THRESHOLD;
         $tiersDiv = bcdiv((string) $excess, '50000000', 0);
-        if (!is_string($tiersDiv)) {
+        if (! is_string($tiersDiv)) {
             throw new \RuntimeException('BCMath calculation failed');
         }
         $tiers = (int) $tiersDiv;
         $additionalSlippage = bcmul((string) $tiers, (string) self::SLIPPAGE_TIER, 3);
-        if (!is_string($additionalSlippage)) {
+        if (! is_string($additionalSlippage)) {
             throw new \RuntimeException('BCMath calculation failed');
         }
 
         $result = bcadd((string) self::SLIPPAGE_BASE, $additionalSlippage, 3);
-        if (!is_string($result)) {
+        if (! is_string($result)) {
             throw new \RuntimeException('BCMath calculation failed');
         }
+
         return $result;
     }
 }

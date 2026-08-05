@@ -18,16 +18,16 @@ class DebugController
 
     public function getTotpCode(): JsonResponse
     {
-        if (!config('app.debug')) {
+        if (! config('app.debug')) {
             return response()->json(['error' => 'Debug mode disabled'], 403);
         }
 
         $user = Auth::user();
-        if (!$user instanceof User) {
+        if (! $user instanceof User) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        if (!$user->totp_secret) {
+        if (! $user->totp_secret) {
             return response()->json(['error' => 'TOTP not configured'], 400);
         }
 

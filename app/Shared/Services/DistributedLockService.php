@@ -9,12 +9,12 @@ class DistributedLockService
     private const LOCK_TTL = 30; // seconds
 
     /**
-     * @param array<int, string> $keys
+     * @param  array<int, string>  $keys
      */
     public function acquireLock(array $keys, int $timeout = 10): bool
     {
         sort($keys);
-        $lockKey = 'lock:' . implode(':', $keys);
+        $lockKey = 'lock:'.implode(':', $keys);
 
         $startTime = time();
         while (time() - $startTime < $timeout) {
@@ -28,24 +28,25 @@ class DistributedLockService
     }
 
     /**
-     * @param array<int, string> $keys
+     * @param  array<int, string>  $keys
      */
     public function releaseLock(array $keys): void
     {
         sort($keys);
-        $lockKey = 'lock:' . implode(':', $keys);
+        $lockKey = 'lock:'.implode(':', $keys);
         Cache::forget($lockKey);
     }
 
     /**
      * @template T
-     * @param array<int, string> $keys
-     * @param callable(): T $callback
+     *
+     * @param  array<int, string>  $keys
+     * @param  callable(): T  $callback
      * @return T
      */
     public function withLock(array $keys, callable $callback, int $timeout = 10): mixed
     {
-        if (!$this->acquireLock($keys, $timeout)) {
+        if (! $this->acquireLock($keys, $timeout)) {
             throw new \RuntimeException('Could not acquire lock');
         }
 

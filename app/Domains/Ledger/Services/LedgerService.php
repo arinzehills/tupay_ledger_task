@@ -15,6 +15,7 @@ class LedgerService
     public function canWithdraw(Wallet $wallet, Money $amount): bool
     {
         $balance = $this->getWalletBalance($wallet);
+
         return $balance->isGreaterThanOrEqual($amount);
     }
 }

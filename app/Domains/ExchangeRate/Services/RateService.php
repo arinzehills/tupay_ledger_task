@@ -7,7 +7,9 @@ use Illuminate\Support\Facades\Redis;
 class RateService
 {
     private const CACHE_KEY = 'exchange_rate:ngn_cny';
+
     private const FRESH_TTL = 60; // seconds
+
     private const STALE_TTL = 300; // seconds
 
     public function getRate(): float
@@ -40,8 +42,10 @@ class RateService
         $cached = Redis::get(self::CACHE_KEY);
         if ($cached) {
             $data = json_decode($cached, true);
+
             return $data['rate'];
         }
+
         return null;
     }
 

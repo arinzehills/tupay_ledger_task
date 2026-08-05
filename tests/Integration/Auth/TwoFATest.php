@@ -5,8 +5,9 @@ namespace Tests\Integration\Auth;
 use App\Domains\Auth\Services\TotpService;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Redis;
+use OTPHP\TOTP;
 use Tests\TestCase;
 
 class TwoFATest extends TestCase
@@ -14,7 +15,9 @@ class TwoFATest extends TestCase
     use RefreshDatabase;
 
     protected User $user;
+
     protected TotpService $totpService;
+
     private array $redisStore = [];
 
     protected function setUp(): void
@@ -23,7 +26,7 @@ class TwoFATest extends TestCase
 
         $this->mockRedis();
 
-        $this->totpService = new TotpService();
+        $this->totpService = new TotpService;
 
         $secret = $this->totpService->generateSecret();
 
@@ -40,20 +43,22 @@ class TwoFATest extends TestCase
     {
         $redisStore = &$this->redisStore;
 
-        \Illuminate\Support\Facades\Redis::shouldReceive('setex')
+        Redis::shouldReceive('setex')
             ->andReturnUsing(function ($key, $ttl, $value) use (&$redisStore) {
                 $redisStore[$key] = $value;
+
                 return true;
             });
 
-        \Illuminate\Support\Facades\Redis::shouldReceive('get')
+        Redis::shouldReceive('get')
             ->andReturnUsing(function ($key) use (&$redisStore) {
                 return $redisStore[$key] ?? null;
             });
 
-        \Illuminate\Support\Facades\Redis::shouldReceive('del')
+        Redis::shouldReceive('del')
             ->andReturnUsing(function ($key) use (&$redisStore) {
                 unset($redisStore[$key]);
+
                 return 1;
             });
     }
@@ -131,16 +136,17 @@ class TwoFATest extends TestCase
         $eatToken = $response->json('eat_token');
         $redisKey = "eat:{$eatToken}";
 
-        $this->assertNotNull(\Illuminate\Support\Facades\Redis::get($redisKey));
+        $this->assertNotNull(Redis::get($redisKey));
 
-        \Illuminate\Support\Facades\Redis::del($redisKey);
+        Redis::del($redisKey);
 
-        $this->assertNull(\Illuminate\Support\Facades\Redis::get($redisKey));
+        $this->assertNull(Redis::get($redisKey));
     }
 
     protected function generateValidTotpCode(string $secret): string
     {
-        $totp = \OTPHP\TOTP::create($secret);
+        $totp = TOTP::create($secret);
+
         return $totp->now();
     }
 }

@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Hash;
 class AuthController
 {
     private TotpService $totpService;
+
     private IssueEatAction $issueEatAction;
 
     public function __construct(TotpService $totpService, IssueEatAction $issueEatAction)
@@ -32,7 +33,7 @@ class AuthController
 
         $user = User::where('email', $dto->email)->first();
 
-        if (!$user || !Hash::check($dto->password, $user->password)) {
+        if (! $user || ! Hash::check($dto->password, $user->password)) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
@@ -62,11 +63,11 @@ class AuthController
     public function challenge(Request $request): JsonResponse
     {
         $user = Auth::user();
-        if (!$user instanceof User) {
+        if (! $user instanceof User) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        if (!$user->totp_secret) {
+        if (! $user->totp_secret) {
             return response()->json(['error' => 'TOTP not set up'], 400);
         }
 
@@ -75,7 +76,7 @@ class AuthController
             'action_payload' => 'required|array',
         ]));
 
-        if (!$this->totpService->verifyCode($user->totp_secret, $dto->totp_code)) {
+        if (! $this->totpService->verifyCode($user->totp_secret, $dto->totp_code)) {
             return response()->json(['error' => 'Invalid TOTP code'], 401);
         }
 

@@ -33,6 +33,7 @@ class Money
         if ($sum < 0) {
             throw new \OverflowException('Money addition results in overflow');
         }
+
         return new self($sum);
     }
 
@@ -42,6 +43,7 @@ class Money
         if ($result < 0) {
             throw new \InvalidArgumentException('Insufficient funds');
         }
+
         return new self($result);
     }
 

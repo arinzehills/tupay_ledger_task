@@ -13,34 +13,45 @@ namespace App\ApiDocs;
  *     tags={"Ledger"},
  *     summary="Get wallet ledger entries",
  *     security={{"Bearer":{}}},
+ *
  *     @OA\Parameter(
  *         name="wallet",
  *         in="path",
  *         required=true,
  *         description="Wallet ID",
+ *
  *         @OA\Schema(type="integer")
  *     ),
+ *
  *     @OA\Parameter(
  *         name="page",
  *         in="query",
  *         description="Page number",
+ *
  *         @OA\Schema(type="integer", default=1)
  *     ),
+ *
  *     @OA\Parameter(
  *         name="per_page",
  *         in="query",
  *         description="Entries per page",
+ *
  *         @OA\Schema(type="integer", default=50)
  *     ),
+ *
  *     @OA\Response(
  *         response=200,
  *         description="Ledger entries retrieved successfully",
+ *
  *         @OA\JsonContent(
+ *
  *             @OA\Property(property="wallet_id", type="integer"),
  *             @OA\Property(property="currency", type="string", example="NGN"),
  *             @OA\Property(property="balance", type="integer"),
  *             @OA\Property(property="entries", type="array",
+ *
  *                 @OA\Items(type="object",
+ *
  *                     @OA\Property(property="id", type="integer"),
  *                     @OA\Property(property="type", type="string", enum={"debit","credit"}),
  *                     @OA\Property(property="amount", type="integer"),
@@ -56,9 +67,8 @@ namespace App\ApiDocs;
  *             )
  *         )
  *     ),
+ *
  *     @OA\Response(response=403, description="Unauthorized wallet access")
  * )
  */
-class LedgerDocs
-{
-}
+class LedgerDocs {}

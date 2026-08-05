@@ -14,7 +14,7 @@ class ConsumeEatAction
     }
 
     /**
-     * @param array<string, mixed> $actionPayload
+     * @param  array<string, mixed>  $actionPayload
      */
     public function execute(string $token, array $actionPayload): bool
     {

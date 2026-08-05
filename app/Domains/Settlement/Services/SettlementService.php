@@ -18,7 +18,7 @@ class SettlementService
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param  array<string, mixed>  $payload
      */
     public function generateWebhookSignature(array $payload): string
     {
@@ -27,6 +27,7 @@ class SettlementService
         if ($payloadJson === false) {
             throw new \RuntimeException('Failed to encode payload');
         }
+
         return hash_hmac('sha256', $payloadJson, $secret);
     }
 

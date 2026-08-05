@@ -11,7 +11,7 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        $totpService = new TotpService();
+        $totpService = new TotpService;
 
         User::create([
             'email' => 'test@example.com',

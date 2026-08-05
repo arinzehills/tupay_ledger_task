@@ -10,7 +10,7 @@ class SettlementDebugController
 {
     public function generateSignature(Request $request): JsonResponse
     {
-        if (!config('app.debug')) {
+        if (! config('app.debug')) {
             return response()->json(['error' => 'Debug mode disabled'], 403);
         }
 
@@ -19,7 +19,7 @@ class SettlementDebugController
         $settledAt = $request->query('settled_at', now()->toIso8601String());
 
         $transaction = Transaction::find($transactionId);
-        if (!$transaction) {
+        if (! $transaction) {
             return response()->json(['error' => 'Transaction not found'], 404);
         }
 
@@ -44,7 +44,7 @@ class SettlementDebugController
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param  array<string, mixed>  $payload
      */
     private function generateCurlExample(array $payload, string $signature): string
     {
@@ -53,6 +53,7 @@ class SettlementDebugController
         if ($dataJson === false) {
             throw new \RuntimeException('Failed to encode curl example data');
         }
+
         return sprintf(
             "curl -X 'POST' '%s' -H 'Content-Type: application/json' -d '%s'",
             config('settlement.webhook_url'),

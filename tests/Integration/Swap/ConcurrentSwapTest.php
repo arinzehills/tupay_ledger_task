@@ -8,6 +8,8 @@ use App\Models\User;
 use App\Models\Wallet;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Redis;
+use OTPHP\TOTP;
 use Tests\TestCase;
 
 class ConcurrentSwapTest extends TestCase
@@ -15,9 +17,13 @@ class ConcurrentSwapTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Wallet $ngnWallet;
+
     private Wallet $cnyWallet;
+
     private TotpService $totpService;
+
     private array $redisStore = [];
 
     protected function setUp(): void
@@ -26,7 +32,7 @@ class ConcurrentSwapTest extends TestCase
 
         $this->mockRedis();
 
-        $this->totpService = new TotpService();
+        $this->totpService = new TotpService;
         $secret = $this->totpService->generateSecret();
 
         $this->user = User::create([
@@ -147,7 +153,8 @@ class ConcurrentSwapTest extends TestCase
 
     protected function generateValidTotpCode(string $secret): string
     {
-        $totp = \OTPHP\TOTP::create($secret);
+        $totp = TOTP::create($secret);
+
         return $totp->now();
     }
 
@@ -155,20 +162,22 @@ class ConcurrentSwapTest extends TestCase
     {
         $redisStore = &$this->redisStore;
 
-        \Illuminate\Support\Facades\Redis::shouldReceive('setex')
+        Redis::shouldReceive('setex')
             ->andReturnUsing(function ($key, $ttl, $value) use (&$redisStore) {
                 $redisStore[$key] = $value;
+
                 return true;
             });
 
-        \Illuminate\Support\Facades\Redis::shouldReceive('get')
+        Redis::shouldReceive('get')
             ->andReturnUsing(function ($key) use (&$redisStore) {
                 return $redisStore[$key] ?? null;
             });
 
-        \Illuminate\Support\Facades\Redis::shouldReceive('del')
+        Redis::shouldReceive('del')
             ->andReturnUsing(function ($key) use (&$redisStore) {
                 unset($redisStore[$key]);
+
                 return 1;
             });
     }

@@ -2,10 +2,10 @@
 
 namespace Tests\Integration\Settlement;
 
+use App\Models\LedgerEntry;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Models\Wallet;
-use App\Models\LedgerEntry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -15,6 +15,7 @@ class SettlementWebhookTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Transaction $transaction;
 
     protected function setUp(): void
@@ -57,7 +58,7 @@ class SettlementWebhookTest extends TestCase
             'status' => 'pending',
             'source_amount' => 500000,
             'destination_amount' => 300000,
-            'reference_id' => 'test-ref-' . uniqid(),
+            'reference_id' => 'test-ref-'.uniqid(),
         ]);
     }
 

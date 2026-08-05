@@ -13,7 +13,7 @@ class LedgerController
     {
         $user = Auth::user();
 
-        if (!$user || $wallet->user_id !== $user->id) {
+        if (! $user || $wallet->user_id !== $user->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 

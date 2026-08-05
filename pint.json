@@ -11,7 +11,7 @@
     "single_blank_line_at_eof": true,
     "single_import_per_statement": true,
     "statement_indentation": true,
-    "trailing_comma_in_multiline": ["after"],
+    "trailing_comma_in_multiline": true,
     "whitespace_after_comma_in_array": true
   },
   "exclude": [

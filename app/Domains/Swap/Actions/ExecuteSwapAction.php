@@ -14,9 +14,13 @@ use Illuminate\Support\Facades\DB;
 class ExecuteSwapAction
 {
     private DistributedLockService $lockService;
+
     private ValidateBalanceAction $validateBalance;
+
     private CalculateSwapAction $calculateSwap;
+
     private PostLedgerEntriesAction $postLedgerEntries;
+
     public function __construct(
         DistributedLockService $lockService,
         ValidateBalanceAction $validateBalance,
@@ -64,7 +68,7 @@ class ExecuteSwapAction
                 $sourceWallet->lockForUpdate()->first();
                 $destinationWallet->lockForUpdate()->first();
 
-                if (!$this->validateBalance->execute($sourceWallet, $sourceAmount)) {
+                if (! $this->validateBalance->execute($sourceWallet, $sourceAmount)) {
                     throw new \InvalidArgumentException('Insufficient balance');
                 }
 

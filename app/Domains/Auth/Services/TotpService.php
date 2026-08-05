@@ -15,6 +15,7 @@ class TotpService
     {
         try {
             $totp = TOTP::create($secret);
+
             return $totp->verify($code);
         } catch (\Throwable $e) {
             return false;
@@ -24,6 +25,7 @@ class TotpService
     public function getCode(string $secret): string
     {
         $totp = TOTP::create($secret);
+
         return $totp->now();
     }
 }

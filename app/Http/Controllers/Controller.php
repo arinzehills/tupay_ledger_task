@@ -13,6 +13,7 @@ use Illuminate\Routing\Controller as BaseController;
  *     summary="Get the authenticated user",
  *     tags={"User"},
  *     security={{"Bearer":{}}},
+ *
  *     @OA\Response(response=200, description="The authenticated user"),
  *     @OA\Response(response=401, description="Unauthenticated")
  * )
