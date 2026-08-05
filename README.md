@@ -17,24 +17,62 @@ All migrations and seeds run automatically on startup.
 
 ## Architecture Overview
 
-This project implements a **Pragmatic Modular Monolith** with vertical slice development. Each slice is a complete feature with its own domain logic, services, and actions.
+This project implements **Domain-Driven Design (DDD)** organized as a **Modular Monolith** with **Vertical Slice** implementation pattern.
 
-### Vertical Slices
+### Domain-Driven Design Structure
 
-1. **Auth Slice**: User login + step-up 2FA with TOTP and EAT tokens
-2. **Foundation Slice**: Double-entry ledger, Money ValueObject, database schema
-3. **Swap Engine**: Core swap logic with pessimistic locking and distributed lock safety
-4. **Settlement**: Webhook-based settlement notifications and transaction finalization
-5. **Documentation**: Comprehensive API docs via Swagger
+**Bounded Contexts** (independent domains with clear boundaries):
+
+1. **Auth Context**: User identity, authentication, step-up 2FA with TOTP/EAT tokens
+2. **Ledger Context**: Double-entry accounting, wallet balances, transaction history
+3. **Swap Context**: Currency exchange, rate calculation, slippage computation
+4. **Settlement Context**: Webhook processing, transaction finalization, state machine
+5. **Exchange Rate Context**: Rate fetching, caching (SWR), rate distribution
+
+### DDD Building Blocks
+
+**Entities** (objects with identity):
+- `User` - User account with authentication credentials
+- `Wallet` - Currency holder with balance tracking
+- `Transaction` - Swap transaction with state machine (pending→completed/failed)
+- `LedgerEntry` - Double-entry ledger record (debit/credit)
+
+**Value Objects** (immutable, behavior-rich):
+- `Money` - BIGINT subunit amounts (kobo, fen) with arithmetic operations
+- `Currency` enum - NGN, CNY with type safety
+
+**Domain Services** (orchestrate cross-aggregate logic):
+- `RateService` - Fetch/cache exchange rates, SWR pattern
+- `SwapService` - Coordinate swap between wallets
+- `LedgerService` - Double-entry ledger operations
+- `DistributedLockService` - Prevent concurrent swap conflicts
+
+**Application Services** (implement use cases):
+- `CalculateSwapAction` - Compute destination amount + slippage
+- `ExecuteSwapAction` - Execute swap with deadlock retry logic
+- `ProcessSettlementAction` - Handle webhook settlement with state machine
+- `LoginAction` - User authentication
 
 ### Key Design Decisions
 
 - **No Floats**: All currency amounts use BIGINT subunits (NGN in kobo, CNY in fen) to ensure exactness
-- **Modular Services + Actions**: Services orchestrate, Actions execute single responsibilities
+- **Bounded Contexts**: Each domain is independent, reduces coupling
+- **Services + Actions**: Domain Services coordinate, Actions implement single responsibility (SOLID)
 - **Pessimistic Locking**: SELECT...FOR UPDATE at REPEATABLE READ isolation
 - **Distributed Locks**: Redis-backed sorted key ordering prevents deadlocks
 - **SWR Caching**: Exchange rates cached with stale-while-revalidate pattern (60s fresh, 300s stale)
 - **Signature Verification**: Webhook payloads validated with HMAC-SHA256
+
+### Ubiquitous Language
+
+Domain-specific terminology used consistently across code:
+- **kobo**: NGN subunit (1 NGN = 100 kobo)
+- **fen**: CNY subunit (1 CNY = 100 fen)
+- **slippage**: Trading fee (0.5% base + 0.1% per 500k NGN tier)
+- **EAT token**: Elevated Action Token for 2FA (60s TTL, single-use, action-hashed)
+- **ledger entry**: Double-entry record (debit or credit)
+- **distributed lock**: Redis-backed lock on sorted user+wallet IDs
+- **REPEATABLE READ**: Database isolation level for pessimistic locking
 
 ## System Requirements
 
