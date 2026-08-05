@@ -11,6 +11,9 @@ class Money
         if ($amount < 0) {
             throw new \InvalidArgumentException('Money amount cannot be negative');
         }
+        if ($amount > PHP_INT_MAX) {
+            throw new \InvalidArgumentException('Money amount exceeds maximum value');
+        }
         $this->amount = $amount;
     }
 
@@ -26,7 +29,11 @@ class Money
 
     public function add(Money $other): self
     {
-        return new self($this->amount + $other->amount);
+        $sum = $this->amount + $other->amount;
+        if ($sum < 0) {
+            throw new \OverflowException('Money addition results in overflow');
+        }
+        return new self($sum);
     }
 
     public function subtract(Money $other): self

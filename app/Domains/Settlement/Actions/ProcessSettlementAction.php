@@ -15,6 +15,10 @@ class ProcessSettlementAction
             throw new \InvalidArgumentException('Transaction not found');
         }
 
+        if (in_array($transaction->status, ['completed', 'failed'])) {
+            return $transaction;
+        }
+
         $newStatus = $status === 'completed' ? 'completed' : 'failed';
 
         DB::transaction(function () use ($transaction, $newStatus, $settledAt) {

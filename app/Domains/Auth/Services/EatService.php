@@ -38,7 +38,7 @@ class EatService
 
         $payload = json_decode($data, true);
 
-        if ($payload['action_hash'] !== $expectedActionHash) {
+        if (!hash_equals($payload['action_hash'], $expectedActionHash)) {
             return null;
         }
 

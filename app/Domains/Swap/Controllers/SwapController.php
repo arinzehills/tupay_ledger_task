@@ -29,7 +29,7 @@ class SwapController
         $validated = $request->validate([
             'source_currency' => 'required|string',
             'destination_currency' => 'required|string',
-            'amount' => 'required|integer|min:1',
+            'amount' => 'required|integer|min:1|max:9223372036854775807',
         ]);
 
         $actionPayload = [
