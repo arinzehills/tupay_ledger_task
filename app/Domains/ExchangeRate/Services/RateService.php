@@ -12,18 +12,23 @@ class RateService
 
     private const STALE_TTL = 300; // seconds
 
-    public function getRate(): float
+    public function getRate(): string
     {
         $cached = Redis::get(self::CACHE_KEY);
 
         if ($cached) {
             $data = json_decode($cached, true);
-            if ($data['fresh_until'] > time()) {
-                return $data['rate'];
+            if (isset($data['fresh_until'], $data['rate']) && $data['fresh_until'] > time()) {
+                return (string) $data['rate'];
             }
         }
 
         $freshRate = $this->fetchRate();
+
+        // Validate rate is positive (prevent zero/negative rate exploitation)
+        if (! is_numeric($freshRate) || (float) $freshRate <= 0) {
+            throw new \RuntimeException('Invalid exchange rate from endpoint');
+        }
 
         Redis::setex(
             self::CACHE_KEY,
@@ -34,16 +39,17 @@ class RateService
             ])
         );
 
-        return $freshRate;
+        return (string) $freshRate;
     }
 
-    public function getStaleRate(): ?float
+    public function getStaleRate(): ?string
     {
         $cached = Redis::get(self::CACHE_KEY);
         if ($cached) {
             $data = json_decode($cached, true);
-
-            return $data['rate'];
+            if (isset($data['rate'])) {
+                return (string) $data['rate'];
+            }
         }
 
         return null;
@@ -52,6 +58,7 @@ class RateService
     private function fetchRate(): float
     {
         // Mock endpoint - returns NGN to CNY rate
+        // TODO: Replace with actual external API call to exchange rate provider
         return 0.0048; // 1 NGN = 0.0048 CNY
     }
 }
