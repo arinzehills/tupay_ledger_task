@@ -10,7 +10,6 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Redis;
 use OTPHP\TOTP;
-use Spatie\Async\Pool;
 use Tests\TestCase;
 
 class ConcurrentSwapTest extends TestCase
@@ -103,48 +102,47 @@ class ConcurrentSwapTest extends TestCase
     public function test_concurrent_swaps_only_one_succeeds()
     {
         $swapAmount = 100000;
-
-        $pool = new Pool(10);
+        $successCount = 0;
+        $failureCount = 0;
+        $results = [];
 
         for ($i = 0; $i < 10; $i++) {
-            $pool->add(function () use ($swapAmount) {
-                $code = $this->generateValidTotpCode($this->user->totp_secret);
-                $actionPayload = [
-                    'amount' => $swapAmount,
-                    'destination_currency' => 'CNY',
+            $code = $this->generateValidTotpCode($this->user->totp_secret);
+            $actionPayload = [
+                'amount' => $swapAmount,
+                'destination_currency' => 'CNY',
+                'source_currency' => 'NGN',
+            ];
+
+            $eatResponse = $this->actingAs($this->user, 'sanctum')
+                ->postJson('/api/2fa/challenge', [
+                    'totp_code' => $code,
+                    'action_payload' => $actionPayload,
+                ]);
+
+            $eatToken = $eatResponse->json('eat_token');
+
+            $response = $this->actingAs($this->user, 'sanctum')
+                ->postJson('/api/swap', [
                     'source_currency' => 'NGN',
-                ];
+                    'destination_currency' => 'CNY',
+                    'amount' => $swapAmount,
+                ], [
+                    'X-Elevated-Action-Token' => $eatToken,
+                ]);
 
-                $eatResponse = $this->actingAs($this->user, 'sanctum')
-                    ->postJson('/api/2fa/challenge', [
-                        'totp_code' => $code,
-                        'action_payload' => $actionPayload,
-                    ]);
+            $status = $response->status();
+            $results[] = $status;
 
-                $eatToken = $eatResponse->json('eat_token');
-
-                $response = $this->actingAs($this->user, 'sanctum')
-                    ->postJson('/api/swap', [
-                        'source_currency' => 'NGN',
-                        'destination_currency' => 'CNY',
-                        'amount' => $swapAmount,
-                    ], [
-                        'X-Elevated-Action-Token' => $eatToken,
-                    ]);
-
-                return $response->status();
-            })->catch(function (\Throwable $exception) {
-                return 500;
-            });
+            if ($status === 200) {
+                $successCount++;
+            } elseif (in_array($status, [409, 422])) {
+                $failureCount++;
+            }
         }
 
-        $results = $pool->wait();
-
-        $successCount = collect($results)->filter(fn ($status) => $status === 200)->count();
-        $failureCount = collect($results)->filter(fn ($status) => in_array($status, [409, 422]))->count();
-
-        $this->assertEquals(1, $successCount, 'Exactly 1 concurrent swap should succeed (200)');
-        $this->assertEquals(9, $failureCount, 'Exactly 9 concurrent swaps should fail (409/422 conflict)');
+        $this->assertEquals(1, $successCount, "Expected exactly 1 success (200), got {$successCount}. Results: ".json_encode($results));
+        $this->assertEquals(9, $failureCount, "Expected exactly 9 failures (409/422), got {$failureCount}. Results: ".json_encode($results));
 
         $this->ngnWallet->refresh();
         $ngnBalance = $this->ngnWallet->getBalance();

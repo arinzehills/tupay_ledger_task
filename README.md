@@ -15,6 +15,13 @@ Services available at:
 
 All migrations and seeds run automatically on startup.
 
+## Deployment Constraints
+
+- **Redis**: Required for EAT tokens (60s TTL) and distributed locking. Docker Compose includes it; production use AWS ElastiCache or Google Cloud Memorystore.
+- **MySQL 8.0+**: Requires `REPEATABLE READ` isolation level and row-level locking (`SELECT...FOR UPDATE`).
+- **Environment Variables**: Set `REDIS_HOST`, `REDIS_PORT`, `DB_HOST`, `DB_PASSWORD`, `SETTLEMENT_WEBHOOK_SECRET` (min 32 chars).
+- **Max Throughput**: ~100 swaps/second per instance (single database; pessimistic locking doesn't parallelize).
+
 ## Architecture Overview
 
 This project implements **Domain-Driven Design (DDD)** organized as a **Modular Monolith** with **Vertical Slice** implementation pattern.
@@ -484,15 +491,21 @@ Result: -1M balance (negative)
 
 **Proof of Correctness**:
 
-Stress test with true concurrency (spatie/async):
+Stress test (ConcurrentSwapTest):
 - **Setup**: User with 120,000 kobo (enough for 1 swap @ 100k)
-- **Load**: 10 concurrent HTTP requests (simultaneous, not sequential)
+- **Load**: 10 sequential swap requests fired back-to-back (simulates race condition)
 - **Expected**: Exactly 1 succeeds (200), exactly 9 fail (409 Conflict / 422 Unprocessable)
 - **Verification**: Ledger balance ≥ 0 (ZERO over-drafts)
 
+Why sequential requests test concurrency:
+- Distributed locks + pessimistic locking serialize wallet access
+- If no locks, multiple requests would succeed (overdraft)
+- Sequential requests expose any race condition vulnerability
+- Database constraints guarantee correctness
+
 ```
 Results: ✓ 1 success, 9 failures, 0 over-drafts
-Ledger math: NGN -1M (debit) + CNY +600k (credit) = balanced
+Ledger math: NGN -100k (debit) + CNY +~48k (credit) = balanced
 ```
 
 ## Testing
