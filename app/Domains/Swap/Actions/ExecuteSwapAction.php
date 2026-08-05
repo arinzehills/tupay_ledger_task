@@ -55,6 +55,10 @@ class ExecuteSwapAction
             $sourceAmount,
             $referenceId
         ) {
+            if (DB::getDriverName() === 'mysql') {
+                DB::statement('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+            }
+
             return DB::transaction(function () use (
                 $user,
                 $sourceWallet,
@@ -62,10 +66,6 @@ class ExecuteSwapAction
                 $sourceAmount,
                 $referenceId
             ) {
-                if (DB::getDriverName() === 'mysql') {
-                    DB::statement('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
-                }
-
                 $sourceWallet->lockForUpdate()->first();
                 $destinationWallet->lockForUpdate()->first();
 

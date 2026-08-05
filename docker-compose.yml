@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tupay_app
+    working_dir: /app
+    volumes:
+      - .:/app
+      - ./storage:/app/storage
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_HOST=mysql
+      - DB_DATABASE=tupay_ledger
+      - DB_USERNAME=root
+      - DB_PASSWORD=root
+      - REDIS_HOST=redis
+      - APP_DEBUG=true
+      - APP_KEY=base64:oKbrZrBarIEaUmpmdeJg9yiT7+97GDpD1XbuVzX87JA=
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: sh -c "sleep 10 && php artisan migrate:fresh --seed && php artisan serve --host=0.0.0.0 --port=8000"
+
+  mysql:
+    image: mysql:8.0
+    container_name: tupay_mysql
+    environment:
+      MYSQL_DATABASE: tupay_ledger
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_HOST: "%"
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: tupay_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  phpmyadmin:
+    image: phpmyadmin:5.2
+    container_name: tupay_phpmyadmin
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: root
+      PMA_PASSWORD: root
+      PMA_DATABASE: tupay_ledger
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  mysql_data:

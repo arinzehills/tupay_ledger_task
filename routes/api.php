@@ -4,6 +4,7 @@ use App\Domains\Auth\Controllers\AuthController;
 use App\Domains\Auth\Controllers\DebugController;
 use App\Domains\Ledger\Controllers\LedgerController;
 use App\Domains\Settlement\Controllers\SettlementWebhookController;
+use App\Domains\Settlement\Controllers\SettlementDebugController;
 use App\Domains\Swap\Controllers\SwapController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -21,6 +22,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/webhook/settlement', [SettlementWebhookController::class, 'handle']);
+
+if (config('app.debug')) {
+    Route::get('/debug/settlement-signature', [SettlementDebugController::class, 'generateSignature']);
+}
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
