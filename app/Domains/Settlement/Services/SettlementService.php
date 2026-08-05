@@ -7,6 +7,9 @@ use Illuminate\Support\Collection;
 
 class SettlementService
 {
+    /**
+     * @return Collection<int, Transaction>
+     */
     public function getPendingSettlements(): Collection
     {
         return Transaction::where('status', 'pending')
@@ -14,10 +17,17 @@ class SettlementService
             ->get();
     }
 
+    /**
+     * @param array<string, mixed> $payload
+     */
     public function generateWebhookSignature(array $payload): string
     {
-        $secret = config('settlement.webhook_secret', '');
-        return hash_hmac('sha256', json_encode($payload), $secret);
+        $secret = (string) config('settlement.webhook_secret', '');
+        $payloadJson = json_encode($payload);
+        if ($payloadJson === false) {
+            throw new \RuntimeException('Failed to encode payload');
+        }
+        return hash_hmac('sha256', $payloadJson, $secret);
     }
 
     public function getSettlementStatus(Transaction $transaction): string

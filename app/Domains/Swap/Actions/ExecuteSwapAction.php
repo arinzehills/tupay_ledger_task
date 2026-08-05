@@ -3,7 +3,6 @@
 namespace App\Domains\Swap\Actions;
 
 use App\Domains\Ledger\Actions\PostLedgerEntriesAction;
-use App\Domains\Ledger\Services\LedgerService;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Models\Wallet;
@@ -18,20 +17,16 @@ class ExecuteSwapAction
     private ValidateBalanceAction $validateBalance;
     private CalculateSwapAction $calculateSwap;
     private PostLedgerEntriesAction $postLedgerEntries;
-    private LedgerService $ledgerService;
-
     public function __construct(
         DistributedLockService $lockService,
         ValidateBalanceAction $validateBalance,
         CalculateSwapAction $calculateSwap,
-        PostLedgerEntriesAction $postLedgerEntries,
-        LedgerService $ledgerService
+        PostLedgerEntriesAction $postLedgerEntries
     ) {
         $this->lockService = $lockService;
         $this->validateBalance = $validateBalance;
         $this->calculateSwap = $calculateSwap;
         $this->postLedgerEntries = $postLedgerEntries;
-        $this->ledgerService = $ledgerService;
     }
 
     public function execute(

@@ -3,17 +3,18 @@
 namespace App\Domains\Settlement\Controllers;
 
 use App\Models\Transaction;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class SettlementDebugController
 {
-    public function generateSignature(Request $request)
+    public function generateSignature(Request $request): JsonResponse
     {
         if (!config('app.debug')) {
             return response()->json(['error' => 'Debug mode disabled'], 403);
         }
 
-        $transactionId = (int) $request->query('transaction_id', 1);
+        $transactionId = (int) $request->query('transaction_id', '1');
         $status = $request->query('status', 'completed');
         $settledAt = $request->query('settled_at', now()->toIso8601String());
 
@@ -28,8 +29,12 @@ class SettlementDebugController
             'settled_at' => $settledAt,
         ];
 
-        $secret = config('settlement.webhook_secret');
-        $signature = hash_hmac('sha256', json_encode($payload), $secret);
+        $secret = (string) config('settlement.webhook_secret');
+        $payloadJson = json_encode($payload);
+        if ($payloadJson === false) {
+            throw new \RuntimeException('Failed to encode payload');
+        }
+        $signature = hash_hmac('sha256', $payloadJson, $secret);
 
         return response()->json([
             'payload' => $payload,
@@ -38,13 +43,20 @@ class SettlementDebugController
         ]);
     }
 
+    /**
+     * @param array<string, mixed> $payload
+     */
     private function generateCurlExample(array $payload, string $signature): string
     {
         $data = array_merge($payload, ['signature' => $signature]);
+        $dataJson = json_encode($data);
+        if ($dataJson === false) {
+            throw new \RuntimeException('Failed to encode curl example data');
+        }
         return sprintf(
             "curl -X 'POST' '%s' -H 'Content-Type: application/json' -d '%s'",
             config('settlement.webhook_url'),
-            str_replace("'", "\\'", json_encode($data))
+            str_replace("'", "\\'", $dataJson)
         );
     }
 }

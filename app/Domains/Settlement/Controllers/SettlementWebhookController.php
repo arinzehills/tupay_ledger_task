@@ -37,7 +37,10 @@ class SettlementWebhookController
         }
     }
 
-    private function validateWebhook(Request $request)
+    /**
+     * @return array<string, mixed>|\Illuminate\Http\JsonResponse
+     */
+    private function validateWebhook(Request $request): array|JsonResponse
     {
         $all = $request->all();
 
@@ -45,9 +48,13 @@ class SettlementWebhookController
             return response()->json(['error' => 'Missing required fields'], 422);
         }
 
-        $webhookSecret = config('settlement.webhook_secret', '');
+        $webhookSecret = (string) config('settlement.webhook_secret', '');
         $payload = $request->except('signature');
-        $expectedSignature = hash_hmac('sha256', json_encode($payload), $webhookSecret);
+        $payloadJson = json_encode($payload);
+        if ($payloadJson === false) {
+            return response()->json(['error' => 'Failed to encode payload'], 500);
+        }
+        $expectedSignature = hash_hmac('sha256', $payloadJson, $webhookSecret);
 
         if (!hash_equals($all['signature'], $expectedSignature)) {
             return response()->json(['error' => 'Invalid signature'], 401);

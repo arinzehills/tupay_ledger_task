@@ -13,12 +13,12 @@ class LedgerController
     {
         $user = Auth::user();
 
-        if ($wallet->user_id !== $user->id) {
+        if (!$user || $wallet->user_id !== $user->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $page = $request->query('page', 1);
-        $perPage = $request->query('per_page', 50);
+        $page = (int) $request->query('page', '1');
+        $perPage = (int) $request->query('per_page', '50');
 
         $entries = $wallet->ledgerEntries()
             ->orderByDesc('created_at')

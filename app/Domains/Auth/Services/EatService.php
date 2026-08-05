@@ -27,6 +27,9 @@ class EatService
         return $token;
     }
 
+    /**
+     * @return array{user_id: int, action_hash: string}|null
+     */
     public function consumeToken(string $token, string $expectedActionHash): ?array
     {
         $redisKey = "eat:{$token}";

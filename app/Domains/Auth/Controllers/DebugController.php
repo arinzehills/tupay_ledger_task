@@ -3,6 +3,7 @@
 namespace App\Domains\Auth\Controllers;
 
 use App\Domains\Auth\Services\TotpService;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 
@@ -22,6 +23,9 @@ class DebugController
         }
 
         $user = Auth::user();
+        if (!$user instanceof User) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
 
         if (!$user->totp_secret) {
             return response()->json(['error' => 'TOTP not configured'], 400);

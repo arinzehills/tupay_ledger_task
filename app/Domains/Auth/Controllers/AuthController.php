@@ -62,6 +62,9 @@ class AuthController
     public function challenge(Request $request): JsonResponse
     {
         $user = Auth::user();
+        if (!$user instanceof User) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
 
         if (!$user->totp_secret) {
             return response()->json(['error' => 'TOTP not set up'], 400);

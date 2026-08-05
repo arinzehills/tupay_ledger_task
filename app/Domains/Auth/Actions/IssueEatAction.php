@@ -14,10 +14,14 @@ class IssueEatAction
         $this->eatService = $eatService;
     }
 
+    /**
+     * @param array<string, mixed> $actionPayload
+     */
     public function execute(User $user, array $actionPayload): string
     {
         ksort($actionPayload);
-        $actionHash = hash('sha256', json_encode($actionPayload));
+        $payloadJson = json_encode($actionPayload);
+        $actionHash = hash('sha256', is_string($payloadJson) ? $payloadJson : '{}');
         return $this->eatService->issueToken($user, $actionHash);
     }
 }

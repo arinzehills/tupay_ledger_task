@@ -13,10 +13,14 @@ class ConsumeEatAction
         $this->eatService = $eatService;
     }
 
+    /**
+     * @param array<string, mixed> $actionPayload
+     */
     public function execute(string $token, array $actionPayload): bool
     {
         ksort($actionPayload);
-        $actionHash = hash('sha256', json_encode($actionPayload));
+        $payloadJson = json_encode($actionPayload);
+        $actionHash = hash('sha256', is_string($payloadJson) ? $payloadJson : '{}');
         $payload = $this->eatService->consumeToken($token, $actionHash);
 
         return $payload !== null;

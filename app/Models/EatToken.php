@@ -17,6 +17,9 @@ class EatToken extends Model
         'consumed_at',
     ];
 
+    /**
+     * @var array<string, string>
+     */
     protected $casts = [
         'expires_at' => 'datetime',
         'consumed_at' => 'datetime',

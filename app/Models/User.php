@@ -37,12 +37,6 @@ class User extends Authenticatable
         'totp_secret',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
-
     public function wallets(): HasMany
     {
         return $this->hasMany(Wallet::class);

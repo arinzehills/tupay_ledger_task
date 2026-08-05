@@ -4,6 +4,7 @@ namespace App\Domains\Swap\Controllers;
 
 use App\Domains\Auth\Actions\ConsumeEatAction;
 use App\Domains\Swap\Services\SwapService;
+use App\Models\User;
 use App\Shared\ValueObjects\Money;
 use App\Support\Enums\Currency;
 use Illuminate\Http\JsonResponse;
@@ -20,9 +21,12 @@ class SwapController
     public function swap(Request $request): JsonResponse
     {
         $user = Auth::user();
-        $eatToken = $request->header('X-Elevated-Action-Token');
+        if (!$user instanceof User) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
 
-        if (!$eatToken) {
+        $eatToken = $request->header('X-Elevated-Action-Token');
+        if (!is_string($eatToken)) {
             return response()->json(['error' => 'Missing EAT token'], 401);
         }
 
@@ -46,13 +50,15 @@ class SwapController
             $sourceAmount = Money::fromSubunits($validated['amount']);
             $sourceCurrency = Currency::from($validated['source_currency']);
             $destinationCurrency = Currency::from($validated['destination_currency']);
+            /** @var string $referenceId */
+            $referenceId = $eatToken;
 
             $transaction = $this->swapService->swap(
                 $user,
                 $sourceCurrency,
                 $destinationCurrency,
                 $sourceAmount,
-                $eatToken
+                $referenceId
             );
 
             return response()->json([
