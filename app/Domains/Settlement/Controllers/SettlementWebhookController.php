@@ -48,9 +48,16 @@ class SettlementWebhookController
             return response()->json(['error' => 'Missing required fields'], 422);
         }
 
-        $webhookSecret = (string) config('settlement.webhook_secret', '');
+        $webhookSecret = config('settlement.webhook_secret');
+
+        // Validate webhook secret is configured (empty is production misconfiguration)
+        if (empty($webhookSecret)) {
+            return response()->json(['error' => 'Webhook not properly configured'], 503);
+        }
+
         $payload = $request->except('signature');
-        $payloadJson = json_encode($payload);
+        // Use JSON_UNESCAPED_SLASHES for consistent encoding with clients
+        $payloadJson = json_encode($payload, JSON_UNESCAPED_SLASHES);
         if ($payloadJson === false) {
             return response()->json(['error' => 'Failed to encode payload'], 500);
         }
@@ -60,10 +67,15 @@ class SettlementWebhookController
             return response()->json(['error' => 'Invalid signature'], 401);
         }
 
-        return $request->validate([
+        $validated = $request->validate([
             'transaction_id' => 'required|integer',
             'status' => 'required|in:completed,failed',
             'settled_at' => 'required|date_format:Y-m-d\TH:i:s\Z',
         ]);
+
+        // Ensure transaction_id is int for proper type handling
+        $validated['transaction_id'] = (int) $validated['transaction_id'];
+
+        return $validated;
     }
 }
