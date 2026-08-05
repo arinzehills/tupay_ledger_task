@@ -391,13 +391,17 @@
                             "application/json": {
                                 "schema": {
                                     "properties": {
-                                        "payload": {
-                                            "type": "object",
-                                            "example": {
-                                                "transaction_id": 1,
-                                                "status": "completed",
-                                                "settled_at": "2026-08-05T13:00:00Z"
-                                            }
+                                        "transaction_id": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "status": {
+                                            "type": "string",
+                                            "example": "completed"
+                                        },
+                                        "settled_at": {
+                                            "type": "string",
+                                            "example": "2026-08-05T13:00:00Z"
                                         },
                                         "signature": {
                                             "type": "string",

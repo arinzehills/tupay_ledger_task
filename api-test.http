@@ -1,0 +1,277 @@
+### Tupay Ledger & Settlement Engine - API Test Suite
+### REST Client tests for VS Code REST Client extension
+### Use Ctrl+Alt+R to send requests
+
+@baseUrl = http://localhost:8000/api
+@contentType = application/json
+
+### ============================================================================
+### SECTION 1: AUTHENTICATION & 2FA
+### ============================================================================
+
+### 1.1: Login (get Sanctum bearer token)
+POST {{baseUrl}}/login
+Content-Type: {{contentType}}
+
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+> {%
+  client.global.set("bearer_token", response.body.token);
+  client.global.set("user_id", response.body.user.id);
+%}
+
+### 1.2: Login with invalid password (should fail)
+POST {{baseUrl}}/login
+Content-Type: {{contentType}}
+
+{
+  "email": "test@example.com",
+  "password": "wrongpassword"
+}
+
+### ============================================================================
+### SECTION 2: 2FA CHALLENGE - GET EAT TOKEN
+### ============================================================================
+
+### 2.1: Generate valid TOTP code (use the secret from database)
+### NOTE: Must be run within 30 seconds of viewing the TOTP secret
+### For test@example.com, get totp_secret from: select totp_secret from users where email='test@example.com'
+### Then generate code using: php artisan tinker > TOTP::create($secret)->now()
+
+### 2.2: Challenge with valid TOTP code (gets EAT token)
+POST {{baseUrl}}/2fa/challenge
+Authorization: Bearer {{bearer_token}}
+Content-Type: {{contentType}}
+
+{
+  "totp_code": "000000",
+  "action_payload": {
+    "source_currency": "NGN",
+    "destination_currency": "CNY",
+    "amount": 100000000
+  }
+}
+
+> {%
+  client.global.set("eat_token", response.body.eat_token);
+%}
+
+### 2.3: Challenge with invalid TOTP code (should fail with 401)
+POST {{baseUrl}}/2fa/challenge
+Authorization: Bearer {{bearer_token}}
+Content-Type: {{contentType}}
+
+{
+  "totp_code": "999999",
+  "action_payload": {
+    "source_currency": "NGN",
+    "destination_currency": "CNY",
+    "amount": 100000000
+  }
+}
+
+### 2.4: Challenge without authentication (should fail with 401)
+POST {{baseUrl}}/2fa/challenge
+Content-Type: {{contentType}}
+
+{
+  "totp_code": "000000",
+  "action_payload": {
+    "source_currency": "NGN",
+    "destination_currency": "CNY",
+    "amount": 100000000
+  }
+}
+
+### ============================================================================
+### SECTION 3: SWAP EXECUTION
+### ============================================================================
+
+### 3.1: Swap with valid EAT token (should succeed with 200)
+POST {{baseUrl}}/swap
+Authorization: Bearer {{bearer_token}}
+X-Elevated-Action-Token: {{eat_token}}
+Content-Type: {{contentType}}
+
+{
+  "source_currency": "NGN",
+  "destination_currency": "CNY",
+  "amount": 100000000
+}
+
+> {%
+  if (response.status === 200) {
+    client.global.set("transaction_id", response.body.transaction.id);
+  }
+%}
+
+### 3.2: Swap without EAT token (should fail with 401)
+POST {{baseUrl}}/swap
+Authorization: Bearer {{bearer_token}}
+Content-Type: {{contentType}}
+
+{
+  "source_currency": "NGN",
+  "destination_currency": "CNY",
+  "amount": 100000000
+}
+
+### 3.3: Swap with invalid EAT token (should fail with 401)
+POST {{baseUrl}}/swap
+Authorization: Bearer {{bearer_token}}
+X-Elevated-Action-Token: invalid-token-xyz
+Content-Type: {{contentType}}
+
+{
+  "source_currency": "NGN",
+  "destination_currency": "CNY",
+  "amount": 100000000
+}
+
+### 3.4: Swap with expired EAT token (should fail - token has 60s TTL)
+### Wait 61+ seconds, then try using the same EAT token again
+POST {{baseUrl}}/swap
+Authorization: Bearer {{bearer_token}}
+X-Elevated-Action-Token: {{eat_token}}
+Content-Type: {{contentType}}
+
+{
+  "source_currency": "NGN",
+  "destination_currency": "CNY",
+  "amount": 100000000
+}
+
+### 3.5: Swap with insufficient balance (should fail with 422)
+POST {{baseUrl}}/swap
+Authorization: Bearer {{bearer_token}}
+X-Elevated-Action-Token: {{eat_token}}
+Content-Type: {{contentType}}
+
+{
+  "source_currency": "NGN",
+  "destination_currency": "CNY",
+  "amount": 9999999999999
+}
+
+### 3.6: Swap with self-currency (should fail - NGN to NGN)
+POST {{baseUrl}}/swap
+Authorization: Bearer {{bearer_token}}
+X-Elevated-Action-Token: {{eat_token}}
+Content-Type: {{contentType}}
+
+{
+  "source_currency": "NGN",
+  "destination_currency": "NGN",
+  "amount": 100000000
+}
+
+### ============================================================================
+### SECTION 4: LEDGER HISTORY
+### ============================================================================
+
+### 4.1: Get ledger entries for NGN wallet (with pagination)
+GET {{baseUrl}}/ledger/1?page=1&per_page=10
+Authorization: Bearer {{bearer_token}}
+
+### 4.2: Get ledger with page 2
+GET {{baseUrl}}/ledger/1?page=2&per_page=10
+Authorization: Bearer {{bearer_token}}
+
+### ============================================================================
+### SECTION 5: SETTLEMENT WEBHOOK
+### ============================================================================
+
+### 5.1: Settlement webhook with VALID signature
+### Signature must be: HMAC-SHA256(json_encode(payload), SETTLEMENT_WEBHOOK_SECRET)
+### For test env, secret is typically 'test-secret-key'
+
+POST {{baseUrl}}/webhook/settlement
+Content-Type: {{contentType}}
+
+{
+  "transaction_id": 1,
+  "status": "completed",
+  "settled_at": "2026-08-05T12:00:00Z",
+  "signature": "calculate-hmac-sha256-signature-here"
+}
+
+### 5.2: Settlement webhook with INVALID signature (should fail with 401)
+POST {{baseUrl}}/webhook/settlement
+Content-Type: {{contentType}}
+
+{
+  "transaction_id": 1,
+  "status": "completed",
+  "settled_at": "2026-08-05T12:00:00Z",
+  "signature": "invalid-signature-xyz"
+}
+
+### 5.3: Settlement webhook for non-existent transaction (should fail with 404)
+POST {{baseUrl}}/webhook/settlement
+Content-Type: {{contentType}}
+
+{
+  "transaction_id": 99999,
+  "status": "completed",
+  "settled_at": "2026-08-05T12:00:00Z",
+  "signature": "valid-signature-here"
+}
+
+### 5.4: Settlement webhook marking as failed (status = failed)
+POST {{baseUrl}}/webhook/settlement
+Content-Type: {{contentType}}
+
+{
+  "transaction_id": 1,
+  "status": "failed",
+  "settled_at": "2026-08-05T12:00:00Z",
+  "signature": "valid-signature-here"
+}
+
+### ============================================================================
+### HELPER: Calculate HMAC-SHA256 Signature
+### ============================================================================
+###
+### To calculate valid webhook signature in bash:
+###
+### SECRET="test-secret-key"
+### PAYLOAD='{"transaction_id":1,"status":"completed","settled_at":"2026-08-05T12:00:00Z"}'
+### SIGNATURE=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "$SECRET" | cut -d' ' -f2)
+### echo $SIGNATURE
+###
+### Or in PHP (for Laravel Tinker):
+###
+### php artisan tinker
+### $secret = config('settlement.webhook_secret');
+### $payload = json_encode(['transaction_id' => 1, 'status' => 'completed', 'settled_at' => '2026-08-05T12:00:00Z'], JSON_UNESCAPED_SLASHES);
+### $signature = hash_hmac('sha256', $payload, $secret);
+### echo $signature;
+###
+### ============================================================================
+
+### ============================================================================
+### NOTES ON TEST USERS
+### ============================================================================
+###
+### Seeders create 2 test users:
+### 1. test@example.com / password123
+###    - Initial balance: 5M NGN (500,000,000 kobo), 500k CNY (50,000,000 fen)
+###    - Has valid TOTP secret (generated randomly)
+###
+### 2. user@example.com / password123
+###    - Initial balance: 5M NGN (500,000,000 kobo), 500k CNY (50,000,000 fen)
+###    - Has valid TOTP secret (generated randomly)
+###
+### To get TOTP secret for testing:
+### mysql> SELECT email, totp_secret FROM users;
+###
+### To generate valid TOTP code:
+### php artisan tinker
+### $user = User::where('email', 'test@example.com')->first();
+### $totp = TOTP::create($user->totp_secret);
+### echo $totp->now();  // Valid for 30 seconds
+###
+### ============================================================================
