@@ -91,13 +91,35 @@ jobs:
         run: |
           cp .env.example .env
           php artisan key:generate
-          php artisan migrate --env=testing
+        env:
+          DB_HOST: 127.0.0.1
+          DB_DATABASE: tupay_ledger_test
+          DB_USERNAME: root
+          DB_PASSWORD: root
+
+      - name: Run migrations
+        run: php artisan migrate --env=testing
+        env:
+          DB_HOST: 127.0.0.1
+          DB_DATABASE: tupay_ledger_test
+          DB_USERNAME: root
+          DB_PASSWORD: root
 
       - name: Run concurrent swap stress test
         run: php artisan test --filter=ConcurrentSwapTest --stop-on-failure
+        env:
+          DB_HOST: 127.0.0.1
+          DB_DATABASE: tupay_ledger_test
+          DB_USERNAME: root
+          DB_PASSWORD: root
 
       - name: Run all integration tests
         run: php artisan test
+        env:
+          DB_HOST: 127.0.0.1
+          DB_DATABASE: tupay_ledger_test
+          DB_USERNAME: root
+          DB_PASSWORD: root
 
   summary:
     name: Build Status
