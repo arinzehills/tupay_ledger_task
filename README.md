@@ -1,6 +1,19 @@
 # Tupay Ledger & Settlement Engine
 
-A production-grade backend for cross-border financial transactions (NGN ↔ CNY) with double-entry ledger accounting, step-up 2FA, and distributed locking for concurrency safety.
+A production-grade backend for cross-border financial transactions (NGN ↔ CNY) with double-entry ledger accounting, step-up 2FA, distributed locking, and race-condition-safe concurrency.
+
+## Quick Start (Docker)
+
+```bash
+docker-compose up
+```
+
+Services available at:
+- **App**: http://localhost:8000
+- **Swagger API Docs**: http://localhost:8000/docs
+- **phpMyAdmin**: http://localhost:8080 (root/root)
+
+All migrations and seeds run automatically on startup.
 
 ## Architecture Overview
 

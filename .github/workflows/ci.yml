@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  phpstan:
+    name: PHPStan Level 8
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo, pdo_mysql, bcmath
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --no-progress --prefer-dist
+
+      - name: Run PHPStan Level 8
+        run: ./vendor/bin/phpstan analyse --level 8 app --memory-limit=512M
+
+  code-style:
+    name: Laravel Pint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --no-progress --prefer-dist
+
+      - name: Run Pint
+        run: ./vendor/bin/pint --test
+
+  tests:
+    name: Integration Tests (Concurrency Safety)
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: tupay_ledger_test
+          MYSQL_ROOT_PASSWORD: root
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+        ports:
+          - 3306:3306
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo, pdo_mysql, bcmath, redis
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --no-progress --prefer-dist
+
+      - name: Setup environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          php artisan migrate --env=testing
+
+      - name: Run concurrent swap stress test
+        run: php artisan test --filter=ConcurrentSwapTest --stop-on-failure
+
+      - name: Run all integration tests
+        run: php artisan test
+
+  summary:
+    name: Build Status
+    runs-on: ubuntu-latest
+    needs: [phpstan, code-style, tests]
+
+    steps:
+      - name: Check workflow status
+        run: |
+          if [[ "${{ needs.phpstan.result }}" != "success" ]]; then
+            echo "❌ PHPStan Level 8 failed"
+            exit 1
+          fi
+          if [[ "${{ needs.code-style.result }}" != "success" ]]; then
+            echo "❌ Laravel Pint formatting failed"
+            exit 1
+          fi
+          if [[ "${{ needs.tests.result }}" != "success" ]]; then
+            echo "❌ Integration tests failed (including concurrency stress test)"
+            exit 1
+          fi
+          echo "✅ All checks passed!"
+          echo "✅ PHPStan Level 8"
+          echo "✅ Laravel Pint"
+          echo "✅ Concurrent Swap Stress Test (10x parallelism)"
+          echo "✅ All 19 Integration Tests"
