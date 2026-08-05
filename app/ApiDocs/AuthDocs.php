@@ -31,6 +31,13 @@ namespace App\ApiDocs;
  *                 @OA\Property(property="first_name", type="string"),
  *                 @OA\Property(property="last_name", type="string"),
  *                 @OA\Property(property="middle_name", type="string", nullable=true)
+ *             ),
+ *             @OA\Property(property="wallets", type="array",
+ *                 @OA\Items(type="object",
+ *                     @OA\Property(property="id", type="integer"),
+ *                     @OA\Property(property="currency", type="string", example="NGN"),
+ *                     @OA\Property(property="balance", type="integer", example=500000000)
+ *                 )
  *             )
  *         )
  *     ),
@@ -46,8 +53,12 @@ namespace App\ApiDocs;
  *         required=true,
  *         @OA\JsonContent(
  *             required={"totp_code","action_payload"},
- *             @OA\Property(property="totp_code", type="string", example="123456"),
- *             @OA\Property(property="action_payload", type="object")
+ *             @OA\Property(property="totp_code", type="string", example="123456", description="6-digit TOTP code from authenticator app"),
+ *             @OA\Property(property="action_payload", type="object", description="Action parameters (must match exactly for swap)",
+ *                 @OA\Property(property="source_currency", type="string", example="NGN"),
+ *                 @OA\Property(property="destination_currency", type="string", example="CNY"),
+ *                 @OA\Property(property="amount", type="integer", example=1000000)
+ *             )
  *         )
  *     ),
  *     @OA\Response(

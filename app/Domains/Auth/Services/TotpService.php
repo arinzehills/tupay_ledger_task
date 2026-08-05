@@ -20,4 +20,10 @@ class TotpService
             return false;
         }
     }
+
+    public function getCode(string $secret): string
+    {
+        $totp = TOTP::create($secret);
+        return $totp->now();
+    }
 }

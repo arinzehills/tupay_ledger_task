@@ -1,0 +1,22 @@
+{
+  "preset": "laravel",
+  "rules": {
+    "blank_line_after_namespace": true,
+    "blank_line_after_opening_tag": false,
+    "indentation_type": true,
+    "linebreak_after_opening_tag": false,
+    "no_trailing_whitespace": true,
+    "no_whitespace_before_comma_in_array": true,
+    "no_whitespace_in_blank_line": true,
+    "single_blank_line_at_eof": true,
+    "single_import_per_statement": true,
+    "statement_indentation": true,
+    "trailing_comma_in_multiline": ["after"],
+    "whitespace_after_comma_in_array": true
+  },
+  "exclude": [
+    "bootstrap",
+    "storage",
+    "vendor"
+  ]
+}

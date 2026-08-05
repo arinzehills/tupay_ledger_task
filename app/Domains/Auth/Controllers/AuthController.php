@@ -38,6 +38,8 @@ class AuthController
 
         $token = $user->createToken('api')->plainTextToken;
 
+        $user->load('wallets');
+
         return response()->json([
             'token' => $token,
             'user' => [
@@ -47,6 +49,13 @@ class AuthController
                 'last_name' => $user->last_name,
                 'middle_name' => $user->middle_name,
             ],
+            'wallets' => $user->wallets->map(function ($wallet) {
+                return [
+                    'id' => $wallet->id,
+                    'currency' => $wallet->currency,
+                    'balance' => $wallet->getBalance(),
+                ];
+            }),
         ]);
     }
 

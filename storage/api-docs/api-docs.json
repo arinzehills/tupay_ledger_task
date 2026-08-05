@@ -67,6 +67,25 @@
                                                 }
                                             },
                                             "type": "object"
+                                        },
+                                        "wallets": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "currency": {
+                                                        "type": "string",
+                                                        "example": "NGN"
+                                                    },
+                                                    "balance": {
+                                                        "type": "integer",
+                                                        "example": 500000000
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
                                         }
                                     },
                                     "type": "object"
@@ -98,10 +117,26 @@
                                 ],
                                 "properties": {
                                     "totp_code": {
+                                        "description": "6-digit TOTP code from authenticator app",
                                         "type": "string",
                                         "example": "123456"
                                     },
                                     "action_payload": {
+                                        "description": "Action parameters (must match exactly for swap)",
+                                        "properties": {
+                                            "source_currency": {
+                                                "type": "string",
+                                                "example": "NGN"
+                                            },
+                                            "destination_currency": {
+                                                "type": "string",
+                                                "example": "CNY"
+                                            },
+                                            "amount": {
+                                                "type": "integer",
+                                                "example": 1000000
+                                            }
+                                        },
                                         "type": "object"
                                     }
                                 },
@@ -128,6 +163,333 @@
                     },
                     "401": {
                         "description": "Invalid TOTP"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/debug/totp": {
+            "get": {
+                "tags": [
+                    "Debug"
+                ],
+                "summary": "Get current TOTP code for testing",
+                "description": "DEVELOPMENT ONLY - Returns the current 6-digit TOTP code for the authenticated user. Only available when APP_DEBUG=true.",
+                "operationId": "0845dea6899080365e19e870f2b6cee3",
+                "responses": {
+                    "200": {
+                        "description": "Current TOTP code",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "totp_code": {
+                                            "type": "string",
+                                            "example": "123456"
+                                        },
+                                        "user_id": {
+                                            "type": "integer"
+                                        },
+                                        "email": {
+                                            "type": "string"
+                                        },
+                                        "valid_for_seconds": {
+                                            "type": "integer",
+                                            "example": 30
+                                        },
+                                        "warning": {
+                                            "type": "string",
+                                            "example": "DEBUG ENDPOINT - Only available in development mode"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Debug mode disabled (APP_DEBUG=false)"
+                    },
+                    "400": {
+                        "description": "TOTP not configured for user"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/ledger/{wallet}": {
+            "get": {
+                "tags": [
+                    "Ledger"
+                ],
+                "summary": "Get wallet ledger entries",
+                "operationId": "280926b3f511be4d3bcca43aeebc2a3d",
+                "parameters": [
+                    {
+                        "name": "wallet",
+                        "in": "path",
+                        "description": "Wallet ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Entries per page",
+                        "schema": {
+                            "type": "integer",
+                            "default": 50
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ledger entries retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "wallet_id": {
+                                            "type": "integer"
+                                        },
+                                        "currency": {
+                                            "type": "string",
+                                            "example": "NGN"
+                                        },
+                                        "balance": {
+                                            "type": "integer"
+                                        },
+                                        "entries": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "type": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "debit",
+                                                            "credit"
+                                                        ]
+                                                    },
+                                                    "amount": {
+                                                        "type": "integer"
+                                                    },
+                                                    "reference_id": {
+                                                        "type": "string"
+                                                    },
+                                                    "created_at": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "pagination": {
+                                            "properties": {
+                                                "total": {
+                                                    "type": "integer"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "current_page": {
+                                                    "type": "integer"
+                                                },
+                                                "last_page": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized wallet access"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/webhook/settlement": {
+            "post": {
+                "tags": [
+                    "Settlement"
+                ],
+                "summary": "Process settlement webhook",
+                "operationId": "d1dc5ab7c30ecbe4cff4d6c083f2706f",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "transaction_id",
+                                    "status",
+                                    "settled_at",
+                                    "signature"
+                                ],
+                                "properties": {
+                                    "transaction_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "completed",
+                                            "failed"
+                                        ]
+                                    },
+                                    "settled_at": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "example": "2026-08-05T12:00:00Z"
+                                    },
+                                    "signature": {
+                                        "description": "HMAC-SHA256 signature",
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Settlement processed successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid signature"
+                    },
+                    "404": {
+                        "description": "Transaction not found"
+                    }
+                }
+            }
+        },
+        "/api/swap": {
+            "post": {
+                "tags": [
+                    "Swap"
+                ],
+                "summary": "Execute currency swap",
+                "operationId": "0353ea658c36c9dc29c506c21c4bfcd8",
+                "parameters": [
+                    {
+                        "name": "X-Elevated-Action-Token",
+                        "in": "header",
+                        "description": "EAT token from 2FA challenge",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "source_currency",
+                                    "destination_currency",
+                                    "amount"
+                                ],
+                                "properties": {
+                                    "source_currency": {
+                                        "type": "string",
+                                        "example": "NGN"
+                                    },
+                                    "destination_currency": {
+                                        "type": "string",
+                                        "example": "CNY"
+                                    },
+                                    "amount": {
+                                        "type": "integer",
+                                        "example": 1000000
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Swap executed successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "transaction_id": {
+                                            "type": "integer"
+                                        },
+                                        "status": {
+                                            "type": "string"
+                                        },
+                                        "source_amount": {
+                                            "type": "integer"
+                                        },
+                                        "destination_amount": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid or expired EAT token"
+                    },
+                    "409": {
+                        "description": "Insufficient balance"
+                    },
+                    "422": {
+                        "description": "Invalid request parameters"
                     }
                 },
                 "security": [
@@ -172,6 +534,22 @@
         {
             "name": "Auth",
             "description": "Authentication endpoints"
+        },
+        {
+            "name": "Debug",
+            "description": "Debug endpoints (development only, requires APP_DEBUG=true)"
+        },
+        {
+            "name": "Ledger",
+            "description": "Ledger history endpoints"
+        },
+        {
+            "name": "Settlement",
+            "description": "Settlement webhook endpoints"
+        },
+        {
+            "name": "Swap",
+            "description": "Currency swap endpoints"
         },
         {
             "name": "User",

@@ -1,0 +1,9 @@
+parameters:
+  level: 7
+  paths:
+    - app
+  tmpDir: storage/phpstan
+  errorFormat: table
+  ignoreErrors:
+    - '#Call to an undefined (method|static method|function)#'
+    - '#Access to an undefined property#'
