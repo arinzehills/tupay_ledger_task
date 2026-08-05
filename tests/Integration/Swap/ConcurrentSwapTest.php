@@ -10,6 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Redis;
 use OTPHP\TOTP;
+use Spatie\Async\Pool;
 use Tests\TestCase;
 
 class ConcurrentSwapTest extends TestCase
@@ -56,8 +57,8 @@ class ConcurrentSwapTest extends TestCase
         LedgerEntry::create([
             'wallet_id' => $this->ngnWallet->id,
             'type' => 'credit',
-            'amount' => 1000000,
-            'description' => 'Test balance',
+            'amount' => 120000,
+            'description' => 'Test balance - enough for 1 swap only',
         ]);
 
         LedgerEntry::create([
@@ -101,42 +102,57 @@ class ConcurrentSwapTest extends TestCase
 
     public function test_concurrent_swaps_only_one_succeeds()
     {
-        $successCount = 0;
-        $failCount = 0;
+        $swapAmount = 100000;
+
+        $pool = new Pool(10);
 
         for ($i = 0; $i < 10; $i++) {
-            $code = $this->generateValidTotpCode($this->user->totp_secret);
-            $actionPayload = [
-                'amount' => 100000,
-                'destination_currency' => 'CNY',
-                'source_currency' => 'NGN',
-            ];
-
-            $eatResponse = $this->actingAs($this->user, 'sanctum')
-                ->postJson('/api/2fa/challenge', [
-                    'totp_code' => $code,
-                    'action_payload' => $actionPayload,
-                ]);
-
-            $eatToken = $eatResponse->json('eat_token');
-
-            $response = $this->actingAs($this->user, 'sanctum')
-                ->postJson('/api/swap', [
-                    'source_currency' => 'NGN',
+            $pool->add(function () use ($swapAmount) {
+                $code = $this->generateValidTotpCode($this->user->totp_secret);
+                $actionPayload = [
+                    'amount' => $swapAmount,
                     'destination_currency' => 'CNY',
-                    'amount' => 100000,
-                ], [
-                    'X-Elevated-Action-Token' => $eatToken,
-                ]);
+                    'source_currency' => 'NGN',
+                ];
 
-            if ($response->status() === 200) {
-                $successCount++;
-            } else {
-                $failCount++;
-            }
+                $eatResponse = $this->actingAs($this->user, 'sanctum')
+                    ->postJson('/api/2fa/challenge', [
+                        'totp_code' => $code,
+                        'action_payload' => $actionPayload,
+                    ]);
+
+                $eatToken = $eatResponse->json('eat_token');
+
+                $response = $this->actingAs($this->user, 'sanctum')
+                    ->postJson('/api/swap', [
+                        'source_currency' => 'NGN',
+                        'destination_currency' => 'CNY',
+                        'amount' => $swapAmount,
+                    ], [
+                        'X-Elevated-Action-Token' => $eatToken,
+                    ]);
+
+                return $response->status();
+            })->catch(function (\Throwable $exception) {
+                return 500;
+            });
         }
 
-        $this->assertEquals(10, $successCount + $failCount);
+        $results = $pool->wait();
+
+        $successCount = collect($results)->filter(fn ($status) => $status === 200)->count();
+        $failureCount = collect($results)->filter(fn ($status) => in_array($status, [409, 422]))->count();
+
+        $this->assertEquals(1, $successCount, 'Exactly 1 concurrent swap should succeed (200)');
+        $this->assertEquals(9, $failureCount, 'Exactly 9 concurrent swaps should fail (409/422 conflict)');
+
+        $this->ngnWallet->refresh();
+        $ngnBalance = $this->ngnWallet->getBalance();
+        $this->assertGreaterThanOrEqual(0, $ngnBalance, 'NGN wallet balance must never go negative (no overdrafts)');
+
+        $this->cnyWallet->refresh();
+        $cnyBalance = $this->cnyWallet->getBalance();
+        $this->assertGreaterThanOrEqual(0, $cnyBalance, 'CNY wallet balance must never go negative (no overdrafts)');
     }
 
     public function test_swap_without_eat_token_fails()

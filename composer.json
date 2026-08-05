@@ -12,6 +12,7 @@
         "laravel/sanctum": "^3.0",
         "laravel/tinker": "^2.8",
         "predis/predis": "^2.0",
+        "spatie/async": "^1.6",
         "spomky-labs/otphp": "^10.0"
     },
     "require-dev": {
